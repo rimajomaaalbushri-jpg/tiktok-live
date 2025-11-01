@@ -234,8 +234,8 @@ class RecordingManager:
                 recording.platform_key = platform_key
                 self.app.page.run_task(self.persist_recordings)
 
-            if self.settings.user_config["language"] != "zh_CN":
-                platform = platform_key
+            # Use platform_key for display
+            platform = platform_key
 
             output_dir = self.settings.get_video_save_path()
             await self.check_free_space(output_dir)
