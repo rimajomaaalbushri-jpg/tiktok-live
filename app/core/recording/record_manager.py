@@ -234,7 +234,7 @@ class RecordingManager:
                 recording.platform_key = platform_key
                 self.app.page.run_task(self.persist_recordings)
 
-            # Use platform_key for non-Chinese languages
+            # Use platform_key for display
             platform = platform_key
 
             output_dir = self.settings.get_video_save_path()
