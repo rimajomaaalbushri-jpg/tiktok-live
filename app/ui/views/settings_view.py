@@ -1142,8 +1142,6 @@ class SettingsPage(PageBase):
         
         self.page.update()
 
-        )
-
     def create_accounts_settings_tab(self):
         """Create UI elements for platform accounts configuration."""
         is_mobile = self.app.is_mobile
