@@ -2,7 +2,7 @@
 TikTok authentication and cookie validation module.
 """
 import json
-from typing import Dict, Tuple
+from typing import Any, Dict, Tuple
 
 import httpx
 
@@ -11,6 +11,9 @@ from ...utils.logger import logger
 
 class TikTokAuth:
     """Handle TikTok cookie authentication and validation."""
+    
+    # User-Agent string for HTTP requests
+    USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
     
     def __init__(self):
         self.validation_url = "https://www.tiktok.com/api/user/detail/"
@@ -115,7 +118,7 @@ class TikTokAuth:
         
         return True, "Cookie format is valid"
     
-    async def check_login_status(self, cookies: Dict[str, str]) -> Tuple[bool, str, Dict]:
+    async def check_login_status(self, cookies: Dict[str, str]) -> Tuple[bool, str, Dict[str, Any]]:
         """
         Check if the provided cookies are valid by making a test request to TikTok.
         
@@ -132,7 +135,7 @@ class TikTokAuth:
         cookie_str = "; ".join([f"{k}={v}" for k, v in cookies.items()])
         
         headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'User-Agent': self.USER_AGENT,
             'Accept': 'application/json',
             'Accept-Language': 'en-US,en;q=0.9',
             'Referer': 'https://www.tiktok.com/',
@@ -143,7 +146,7 @@ class TikTokAuth:
             async with httpx.AsyncClient(timeout=self.timeout, follow_redirects=True) as client:
                 # Try to access TikTok's user info endpoint
                 response = await client.get(
-                    'https://www.tiktok.com/api/user/detail/',
+                    self.validation_url,
                     headers=headers,
                     params={'uniqueId': 'self'}  # Request current user info
                 )

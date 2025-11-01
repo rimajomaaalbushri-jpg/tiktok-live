@@ -1023,10 +1023,36 @@ class SettingsPage(PageBase):
         """Handle TikTok cookie file selection."""
         if e.files and len(e.files) > 0:
             file_path = e.files[0].path
+            
+            # Maximum file size: 1MB
+            MAX_FILE_SIZE = 1024 * 1024  # 1MB in bytes
+            
             try:
-                # Read the file content
-                with open(file_path, 'r', encoding='utf-8') as f:
-                    content = f.read()
+                # Check file size
+                import os
+                file_size = os.path.getsize(file_path)
+                if file_size > MAX_FILE_SIZE:
+                    await self.app.snack_bar.show_snack_bar(
+                        f"File too large. Maximum size is {MAX_FILE_SIZE // 1024}KB",
+                        bgcolor=ft.colors.RED
+                    )
+                    return
+                
+                # Read the file content with error handling for different encodings
+                try:
+                    with open(file_path, 'r', encoding='utf-8') as f:
+                        content = f.read()
+                except UnicodeDecodeError:
+                    # Try with latin-1 encoding as fallback
+                    try:
+                        with open(file_path, 'r', encoding='latin-1') as f:
+                            content = f.read()
+                    except Exception as enc_err:
+                        await self.app.snack_bar.show_snack_bar(
+                            f"Cannot read file: unsupported encoding - {str(enc_err)}",
+                            bgcolor=ft.colors.RED
+                        )
+                        return
                 
                 # Parse the cookies
                 cookies = self.tiktok_auth.parse_cookie_file(content)
@@ -1071,6 +1097,18 @@ class SettingsPage(PageBase):
                 
                 self.page.update()
                 
+            except FileNotFoundError:
+                logger.error(f"Cookie file not found: {file_path}")
+                await self.app.snack_bar.show_snack_bar(
+                    "File not found",
+                    bgcolor=ft.colors.RED
+                )
+            except PermissionError:
+                logger.error(f"Permission denied reading cookie file: {file_path}")
+                await self.app.snack_bar.show_snack_bar(
+                    "Permission denied - cannot read file",
+                    bgcolor=ft.colors.RED
+                )
             except Exception as ex:
                 logger.error(f"Error reading cookie file: {ex}")
                 await self.app.snack_bar.show_snack_bar(
