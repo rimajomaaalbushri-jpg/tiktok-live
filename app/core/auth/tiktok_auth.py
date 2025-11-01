@@ -71,8 +71,9 @@ class TikTokAuth:
             if cookies:
                 logger.info(f"Parsed {len(cookies)} cookies from JSON format")
                 return cookies
-        except (json.JSONDecodeError, ValueError) as e:
-            logger.debug(f"Not valid JSON format: {e}")
+        except (json.JSONDecodeError, ValueError):
+            # Not JSON format, will try other formats (Netscape, key=value)
+            logger.debug("Content is not in JSON format, trying other cookie formats")
             pass
         
         # Try Netscape format (tab-separated) and key=value format
