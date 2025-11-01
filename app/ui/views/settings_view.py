@@ -3,6 +3,7 @@ import os
 
 import flet as ft
 
+from ...core.auth.tiktok_auth import TikTokAuth
 from ...models.media.audio_format_model import AudioFormat
 from ...models.media.video_format_model import VideoFormat
 from ...models.media.video_quality_model import VideoQuality
@@ -34,6 +35,10 @@ class SettingsPage(PageBase):
         self.tab_security = None
         self.has_unsaved_changes = {}
         self.delay_handler = DelayedTaskExecutor(self.app, self)
+        self.tiktok_auth = TikTokAuth()
+        self.file_picker = None
+        self.tiktok_cookie_field = None
+        self.tiktok_status_text = None
         self.load_language()
         self.init_unsaved_changes()
         self.page.on_keyboard_event = self.on_keyboard
@@ -918,12 +923,21 @@ class SettingsPage(PageBase):
             "jd",
         ]
 
+        # Initialize file picker if not already done
+        if self.file_picker is None:
+            self.file_picker = ft.FilePicker(on_result=self.on_tiktok_cookie_file_picked)
+            self.page.overlay.append(self.file_picker)
+
         setting_rows = []
         for platform in platforms:
-            cookie_field = ft.TextField(
-                value=self.get_cookies_value(platform), width=500, data=platform, on_change=self.on_cookies_change
-            )
-            setting_rows.append(self.create_setting_row(self._[f"{platform}_cookie"], cookie_field))
+            if platform == "tiktok":
+                # Special handling for TikTok with file upload and validation
+                setting_rows.append(self.create_tiktok_cookie_row())
+            else:
+                cookie_field = ft.TextField(
+                    value=self.get_cookies_value(platform), width=500, data=platform, on_change=self.on_cookies_change
+                )
+                setting_rows.append(self.create_setting_row(self._[f"{platform}_cookie"], cookie_field))
 
         return ft.Column(
             [
@@ -934,6 +948,237 @@ class SettingsPage(PageBase):
             spacing=10,
             scroll=ft.ScrollMode.AUTO,
         )
+
+    def create_tiktok_cookie_row(self):
+        """Create special TikTok cookie row with file upload and validation."""
+        # Create cookie text field
+        self.tiktok_cookie_field = ft.TextField(
+            value=self.get_cookies_value("tiktok"),
+            width=300,
+            data="tiktok",
+            on_change=self.on_cookies_change,
+            multiline=True,
+            min_lines=1,
+            max_lines=3,
+        )
+        
+        # Create upload button
+        upload_button = ft.ElevatedButton(
+            text=self._["tiktok_cookie_upload"],
+            icon=ft.icons.UPLOAD_FILE,
+            on_click=lambda _: self.file_picker.pick_files(
+                allowed_extensions=["txt", "json"],
+                dialog_title=self._["tiktok_cookie_upload_tip"]
+            ),
+            style=ft.ButtonStyle(
+                color=ft.colors.WHITE,
+                bgcolor=ft.colors.BLUE,
+            ),
+        )
+        
+        # Create validate button
+        validate_button = ft.ElevatedButton(
+            text=self._["tiktok_cookie_validate"],
+            icon=ft.icons.VERIFIED_USER,
+            on_click=self.on_tiktok_validate_click,
+            style=ft.ButtonStyle(
+                color=ft.colors.WHITE,
+                bgcolor=ft.colors.GREEN,
+            ),
+        )
+        
+        # Create status text
+        self.tiktok_status_text = ft.Text(
+            value="",
+            size=12,
+            color=ft.colors.GREY,
+            visible=False,
+        )
+        
+        # Create the row with all controls
+        controls_row = ft.Row(
+            controls=[
+                self.tiktok_cookie_field,
+                upload_button,
+                validate_button,
+            ],
+            spacing=10,
+            alignment=ft.MainAxisAlignment.START,
+        )
+        
+        # Create container with label and controls
+        return ft.Container(
+            content=ft.Column(
+                controls=[
+                    ft.Text(self._["tiktok_cookie"], weight=ft.FontWeight.BOLD),
+                    controls_row,
+                    self.tiktok_status_text,
+                ],
+                spacing=5,
+            ),
+            padding=10,
+        )
+    
+    async def on_tiktok_cookie_file_picked(self, e: ft.FilePickerResultEvent):
+        """Handle TikTok cookie file selection."""
+        if e.files and len(e.files) > 0:
+            file_path = e.files[0].path
+            
+            # Maximum file size: 1MB
+            MAX_FILE_SIZE = 1024 * 1024  # 1MB in bytes
+            
+            try:
+                # Check file size
+                import os
+                file_size = os.path.getsize(file_path)
+                if file_size > MAX_FILE_SIZE:
+                    await self.app.snack_bar.show_snack_bar(
+                        f"File too large. Maximum size is {MAX_FILE_SIZE // 1024}KB",
+                        bgcolor=ft.colors.RED
+                    )
+                    return
+                
+                # Read the file content with error handling for different encodings
+                try:
+                    with open(file_path, 'r', encoding='utf-8') as f:
+                        content = f.read()
+                except UnicodeDecodeError:
+                    # Try with latin-1 encoding as fallback
+                    try:
+                        with open(file_path, 'r', encoding='latin-1') as f:
+                            content = f.read()
+                    except Exception as enc_err:
+                        await self.app.snack_bar.show_snack_bar(
+                            f"Cannot read file: unsupported encoding - {str(enc_err)}",
+                            bgcolor=ft.colors.RED
+                        )
+                        return
+                
+                # Parse the cookies
+                cookies = self.tiktok_auth.parse_cookie_file(content)
+                
+                if not cookies:
+                    await self.app.snack_bar.show_snack_bar(
+                        self._["tiktok_cookie_invalid"],
+                        bgcolor=ft.colors.RED
+                    )
+                    return
+                
+                # Validate cookie format
+                is_valid, message = self.tiktok_auth.validate_cookie_format(cookies)
+                
+                if not is_valid:
+                    await self.app.snack_bar.show_snack_bar(
+                        f"{self._['tiktok_cookie_invalid']}: {message}",
+                        bgcolor=ft.colors.RED
+                    )
+                    return
+                
+                # Format cookies for storage
+                cookie_str = self.tiktok_auth.format_cookies_for_storage(cookies)
+                
+                # Update the text field
+                self.tiktok_cookie_field.value = cookie_str
+                self.cookies_config["tiktok"] = cookie_str
+                
+                # Save cookies
+                await self.config_manager.save_cookies_config(self.cookies_config)
+                
+                # Show success message
+                await self.app.snack_bar.show_snack_bar(
+                    self._["tiktok_cookie_validated"],
+                    bgcolor=ft.colors.GREEN
+                )
+                
+                # Update status
+                self.tiktok_status_text.value = f"✓ {self._['tiktok_cookie_validated']}"
+                self.tiktok_status_text.color = ft.colors.GREEN
+                self.tiktok_status_text.visible = True
+                
+                self.page.update()
+                
+            except FileNotFoundError:
+                logger.error(f"Cookie file not found: {file_path}")
+                await self.app.snack_bar.show_snack_bar(
+                    "File not found",
+                    bgcolor=ft.colors.RED
+                )
+            except PermissionError:
+                logger.error(f"Permission denied reading cookie file: {file_path}")
+                await self.app.snack_bar.show_snack_bar(
+                    "Permission denied - cannot read file",
+                    bgcolor=ft.colors.RED
+                )
+            except Exception as ex:
+                logger.error(f"Error reading cookie file: {ex}")
+                await self.app.snack_bar.show_snack_bar(
+                    f"Error: {str(ex)}",
+                    bgcolor=ft.colors.RED
+                )
+    
+    async def on_tiktok_validate_click(self, e):
+        """Handle TikTok cookie validation button click."""
+        cookie_str = self.tiktok_cookie_field.value
+        
+        if not cookie_str:
+            await self.app.snack_bar.show_snack_bar(
+                self._["tiktok_cookie_invalid"],
+                bgcolor=ft.colors.RED
+            )
+            return
+        
+        # Show validating status
+        self.tiktok_status_text.value = f"⏳ {self._['tiktok_validating']}"
+        self.tiktok_status_text.color = ft.colors.BLUE
+        self.tiktok_status_text.visible = True
+        self.page.update()
+        
+        try:
+            # Parse cookies from stored format
+            cookies = self.tiktok_auth.parse_stored_cookies(cookie_str)
+            
+            # Validate cookie format first
+            is_valid, message = self.tiktok_auth.validate_cookie_format(cookies)
+            
+            if not is_valid:
+                self.tiktok_status_text.value = f"✗ {message}"
+                self.tiktok_status_text.color = ft.colors.RED
+                await self.app.snack_bar.show_snack_bar(
+                    f"{self._['tiktok_cookie_invalid']}: {message}",
+                    bgcolor=ft.colors.RED
+                )
+                self.page.update()
+                return
+            
+            # Check login status
+            is_logged_in, status_message, user_info = await self.tiktok_auth.check_login_status(cookies)
+            
+            if is_logged_in:
+                username = user_info.get('nickname', user_info.get('username', 'Unknown'))
+                self.tiktok_status_text.value = f"✓ {self._['tiktok_login_success']}: {username}"
+                self.tiktok_status_text.color = ft.colors.GREEN
+                await self.app.snack_bar.show_snack_bar(
+                    f"{self._['tiktok_login_success']}: {username}",
+                    bgcolor=ft.colors.GREEN
+                )
+            else:
+                self.tiktok_status_text.value = f"✗ {self._['tiktok_login_failed']}: {status_message}"
+                self.tiktok_status_text.color = ft.colors.RED
+                await self.app.snack_bar.show_snack_bar(
+                    f"{self._['tiktok_login_failed']}: {status_message}",
+                    bgcolor=ft.colors.RED
+                )
+            
+        except Exception as ex:
+            logger.error(f"Error validating TikTok cookies: {ex}")
+            self.tiktok_status_text.value = f"✗ Error: {str(ex)}"
+            self.tiktok_status_text.color = ft.colors.RED
+            await self.app.snack_bar.show_snack_bar(
+                f"Error: {str(ex)}",
+                bgcolor=ft.colors.RED
+            )
+        
+        self.page.update()
 
     def create_accounts_settings_tab(self):
         """Create UI elements for platform accounts configuration."""
