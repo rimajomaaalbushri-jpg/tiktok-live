@@ -255,8 +255,8 @@ class RecordingDialog:
         hint_text_dict = {
             "en": "Example:\n0，https://v.douyin.com/AbcdE，nickname1\n0，https://v.douyin.com/EfghI，nickname2\n\nPS: "
             "0=original image or Blu ray, 1=ultra clear, 2=high-definition, 3=standard definition, 4=smooth\n",
-            "zh_CN": "示例:\n0，https://v.douyin.com/AbcdE，主播名1\n0，https://v.douyin.com/EfghI，主播名2"
-            "\n\n其中0=原画或者蓝光，1=超清，2=高清，3=标清，4=流畅",
+            "ar": "مثال:\n0،https://v.douyin.com/AbcdE،اسم_المذيع1\n0،https://v.douyin.com/EfghI،اسم_المذيع2"
+            "\n\nملاحظة: 0=الصورة الأصلية أو بلو راي، 1=فائق الوضوح، 2=عالي الدقة، 3=دقة قياسية، 4=سلس",
         }
 
         # Batch input field
@@ -274,7 +274,7 @@ class RecordingDialog:
                 font_family="Arial",
             ),
             on_change=on_url_change,
-            hint_text=hint_text_dict.get(self.app.language_code, hint_text_dict["zh_CN"]),
+            hint_text=hint_text_dict.get(self.app.language_code, hint_text_dict["ar"]),
         )
 
         tabs = ft.Tabs(
