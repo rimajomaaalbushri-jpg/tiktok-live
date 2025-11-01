@@ -120,6 +120,9 @@ async def main(page: ft.Page) -> None:
     else:
         page.theme_mode = ft.ThemeMode.LIGHT
     
+    # Set RTL mode for Arabic language
+    page.rtl = app.settings.language_code == "ar"
+    
     save_progress_overlay = SaveProgressOverlay(app)
     page.overlay.append(save_progress_overlay.overlay)
     

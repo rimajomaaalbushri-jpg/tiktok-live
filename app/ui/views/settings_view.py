@@ -168,6 +168,8 @@ class SettingsPage(PageBase):
             self.load_language()
             self.app.language_manager.load()
             self.app.language_manager.notify_observers()
+            # Set RTL mode for Arabic language
+            self.page.rtl = self.app.settings.language_code == "ar"
             self.page.run_task(self.load)
 
         if key == "loop_time_seconds":
