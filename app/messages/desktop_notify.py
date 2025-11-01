@@ -1,6 +1,12 @@
 
 
-def send_notification(title: str, message: str, app_icon: str = "", app_name: str = "Tiktok Live Recorder", timeout: int = 10):
+def send_notification(
+    title: str,
+    message: str,
+    app_icon: str = "",
+    app_name: str = "Tiktok Live Recorder",
+    timeout: int = 10
+):
     from plyer import notification
     notification.notify(
         title=title,

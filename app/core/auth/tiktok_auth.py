@@ -2,7 +2,6 @@
 TikTok authentication and cookie validation module.
 """
 import json
-from typing import Any, Dict, Tuple
 
 import httpx
 
@@ -20,13 +19,16 @@ class TikTokAuth:
     """Handle TikTok cookie authentication and validation."""
     
     # User-Agent string for HTTP requests
-    USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+    USER_AGENT = (
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
+        '(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+    )
     
     def __init__(self):
         self.validation_url = "https://www.tiktok.com/api/user/detail/"
         self.timeout = 10
     
-    def parse_cookie_file(self, content: str) -> Dict[str, str]:
+    def parse_cookie_file(self, content: str) -> dict[str, str]:
         """
         Parse cookie content from plain text file.
         Supports multiple formats:
@@ -115,7 +117,7 @@ class TikTokAuth:
         
         return cookies
     
-    def validate_cookie_format(self, cookies: Dict[str, str]) -> Tuple[bool, str]:
+    def validate_cookie_format(self, cookies: dict[str, str]) -> tuple[bool, str]:
         """
         Validate that required TikTok cookie fields are present.
         
@@ -145,11 +147,13 @@ class TikTokAuth:
         # Log missing important fields (warning, not error)
         missing_important = [field for field in important_fields if field not in cookies]
         if missing_important:
-            logger.warning(f"Missing important cookie fields (may affect functionality): {', '.join(missing_important)}")
+            logger.warning(
+                f"Missing important cookie fields (may affect functionality): {', '.join(missing_important)}"
+            )
         
         return True, "Cookie format is valid"
     
-    async def check_login_status(self, cookies: Dict[str, str]) -> Tuple[bool, str, Dict[str, Any]]:
+    async def check_login_status(self, cookies: dict[str, str]) -> tuple[bool, str, dict[str, any]]:
         """
         Check if the provided cookies are valid by making a test request to TikTok.
         
@@ -184,6 +188,14 @@ class TikTokAuth:
                 
                 if response.status_code == 200:
                     try:
+                        # Check if response is JSON
+                        content_type = response.headers.get('content-type', '')
+                        if 'application/json' not in content_type:
+                            logger.warning(
+                                f"TikTok API returned non-JSON response. Content-Type: {content_type}"
+                            )
+                            return False, "API returned non-JSON response - cookies may be invalid", {}
+                        
                         data = response.json()
                         # Check if we got valid user data
                         if 'userInfo' in data and 'user' in data['userInfo']:
@@ -201,10 +213,14 @@ class TikTokAuth:
                             # Response doesn't have expected structure
                             logger.warning("TikTok API returned unexpected response structure")
                             return False, "Could not verify login status - unexpected response", {}
+                    except json.JSONDecodeError as json_err:
+                        logger.error(f"Failed to parse TikTok API response as JSON: {json_err}")
+                        logger.debug(f"Response content (first 500 chars): {response.text[:500]}")
+                        return False, "Failed to parse API response - invalid JSON format", {}
                     except Exception as e:
                         logger.error(f"Failed to parse TikTok API response: {e}")
                         return False, f"Failed to parse response: {str(e)}", {}
-                elif response.status_code == 401 or response.status_code == 403:
+                elif response.status_code in {401, 403}:
                     logger.warning("TikTok cookies are invalid or expired")
                     return False, "Cookies are invalid or expired", {}
                 else:
@@ -221,7 +237,7 @@ class TikTokAuth:
             logger.error(f"Error checking TikTok login status: {e}")
             return False, f"Error: {str(e)}", {}
     
-    def format_cookies_for_storage(self, cookies: Dict[str, str]) -> str:
+    def format_cookies_for_storage(self, cookies: dict[str, str]) -> str:
         """
         Format cookies dictionary into a string suitable for storage.
         
@@ -234,7 +250,7 @@ class TikTokAuth:
         # Store as semicolon-separated key=value pairs
         return "; ".join([f"{k}={v}" for k, v in cookies.items()])
     
-    def parse_stored_cookies(self, cookie_str: str) -> Dict[str, str]:
+    def parse_stored_cookies(self, cookie_str: str) -> dict[str, str]:
         """
         Parse stored cookie string back into a dictionary.
         
