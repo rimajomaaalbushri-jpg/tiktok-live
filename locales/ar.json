@@ -13,7 +13,7 @@
     "colors": "قائمة الألوان"
   },
     "home_page": {
-      "welcome": "مرحبًا بك في StreamCap",
+      "welcome": "مرحبًا بك في Tiktok Live Recorder",
       "tagline": "سجل كل لحظة مثيرة من البث المباشر",
       "start_recording": "بدء التسجيل",
       "recording_list": "قائمة التسجيلات",
@@ -493,7 +493,7 @@
     "exit": "الخروج من البرنامج"
   },
   "login_page": {
-    "login_title": "تسجيل دخول StreamCap",
+    "login_title": "تسجيل دخول Tiktok Live Recorder",
     "login_subtitle": "الرجاء تسجيل الدخول إلى حسابك",
     "username": "اسم المستخدم",
     "password": "كلمة المرور",

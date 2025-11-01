@@ -25,7 +25,8 @@ class TikTokAuth:
         Supports multiple formats:
         - Netscape format (from browser export)
         - Simple key=value format
-        - JSON format
+        - JSON format (object or array)
+        - Semicolon-separated format (cookie: value1; value2)
         
         Args:
             content: Cookie file content as string
@@ -35,26 +36,47 @@ class TikTokAuth:
         """
         cookies = {}
         
+        # Handle empty or whitespace-only content
+        if not content or not content.strip():
+            logger.warning("Empty cookie file content")
+            return cookies
+        
+        # Remove BOM if present (UTF-8 BOM: \ufeff)
+        content = content.lstrip('\ufeff')
+        
         # Try to parse as JSON first
         try:
             parsed = json.loads(content)
             if isinstance(parsed, dict):
+                # Handle simple JSON object format
                 cookies = parsed
             elif isinstance(parsed, list):
+                # Handle JSON array format (browser extensions export)
                 for item in parsed:
-                    if isinstance(item, dict) and 'name' in item and 'value' in item:
-                        cookies[item['name']] = item['value']
+                    if isinstance(item, dict):
+                        # Support both 'name'/'value' and direct key/value in object
+                        if 'name' in item and 'value' in item:
+                            cookies[item['name']] = str(item['value'])
+                        else:
+                            # If it's a dict without name/value, try to use it directly
+                            for key, val in item.items():
+                                if key not in ['domain', 'path', 'expires', 'httpOnly', 'secure', 'sameSite']:
+                                    cookies[key] = str(val)
             if cookies:
-                logger.info("Parsed cookies from JSON format")
+                logger.info(f"Parsed {len(cookies)} cookies from JSON format")
                 return cookies
-        except (json.JSONDecodeError, ValueError):
+        except (json.JSONDecodeError, ValueError) as e:
+            logger.debug(f"Not valid JSON format: {e}")
             pass
         
-        # Try Netscape format (tab-separated)
-        # Format: domain flag path secure expiration name value
+        # Try Netscape format (tab-separated) and key=value format
+        # Normalize line endings
+        content = content.replace('\r\n', '\n').replace('\r', '\n')
         lines = content.strip().split('\n')
+        
         for line in lines:
             line = line.strip()
+            
             # Skip comments and empty lines
             if not line or line.startswith('#'):
                 continue
@@ -63,9 +85,10 @@ class TikTokAuth:
             if '\t' in line:
                 parts = line.split('\t')
                 if len(parts) >= 7:
-                    name = parts[5]
-                    value = parts[6]
-                    cookies[name] = value
+                    name = parts[5].strip()
+                    value = parts[6].strip()
+                    if name and value:  # Only add non-empty cookies
+                        cookies[name] = value
             # Check if it's simple key=value format
             elif '=' in line:
                 # Split only on first = to handle values with =
@@ -75,7 +98,8 @@ class TikTokAuth:
                     value = parts[1].strip()
                     # Remove quotes if present
                     value = value.strip('"').strip("'")
-                    cookies[name] = value
+                    if name and value:  # Only add non-empty cookies
+                        cookies[name] = value
         
         if cookies:
             logger.info(f"Parsed {len(cookies)} cookies from file")
