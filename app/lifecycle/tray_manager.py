@@ -63,7 +63,7 @@ class TrayManager:
                 pystray.MenuItem(_["exit"], on_exit)
             )
 
-            self.icon = pystray.Icon("StreamCap", self.create_image(), "StreamCap", menu)
+            self.icon = pystray.Icon("Tiktok Live Recorder", self.create_image(), "Tiktok Live Recorder", menu)
             self.is_running = True
             self.icon.run()
         except ImportError as e:

@@ -95,7 +95,7 @@ def handle_page_resize(page: ft.Page, app: App) -> callable:
 
 async def main(page: ft.Page) -> None:
 
-    page.title = "StreamCap"
+    page.title = "Tiktok Live Recorder"
     page.window.min_width = MIN_WIDTH
     page.window.min_height = MIN_WIDTH * WINDOW_SCALE
 
