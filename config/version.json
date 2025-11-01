@@ -1,6 +1,7 @@
 {
   "introduction": {
-    "en": "A free application dedicated to recording videos from online live streaming platforms. By integrating FFmpeg, it efficiently and reliably records live streams from over 40 major platforms including Douyin, TikTok, Kuaishou, Huya, Douyu, Bilibili, Rednote, Baidu, Weibo, Kuwo, Migu, Twitch, YouTube, PandaTV, SoopLive, FlexTV(TTing), PopKontv, Twitcasting, WinkTV, 17Live, Acfun, CHZZK, and Shopee."
+    "en": "A free application dedicated to recording videos from online live streaming platforms. By integrating FFmpeg, it efficiently and reliably records live streams from over 40 major platforms including Douyin, TikTok, Kuaishou, Huya, Douyu, Bilibili, Rednote, Baidu, Weibo, Kuwo, Migu, Twitch, YouTube, PandaTV, SoopLive, FlexTV(TTing), PopKontv, Twitcasting, WinkTV, 17Live, Acfun, CHZZK, and Shopee.",
+    "ar": "تطبيق مجاني مخصص لتسجيل مقاطع الفيديو من منصات البث المباشر عبر الإنترنت. من خلال دمج FFmpeg، يسجل بكفاءة وموثوقية البث المباشر من أكثر من 40 منصة رئيسية بما في ذلك Douyin و TikTok و Kuaishou و Huya و Douyu و Bilibili و Rednote و Baidu و Weibo و Kuwo و Migu و Twitch و YouTube و PandaTV و SoopLive و FlexTV و PopKontv و Twitcasting و WinkTV و 17Live و Acfun و CHZZK و Shopee."
   },
   "open_source_license": "Apache License 2.0",
   "version_updates": [
@@ -26,6 +27,20 @@
           {
             "title": "Coming soon",
             "content": "More platforms are being supported..."
+          }
+        ],
+        "ar": [
+          {
+            "title": "تم إصدار StreamCap v1.0.2 رسميًا",
+            "content": "دعم متعدد المنصات، تكييف الويب للهاتف المحمول، إصلاح الأخطاء وتحسينات الاستقرار"
+          },
+          {
+            "title": "نصائح الاستخدام",
+            "content": "اضغط على Alt + H في Windows أو Option + H في Mac للوصول بسرعة إلى مستند مساعدة الاختصارات، وتحسين كفاءة عملك."
+          },
+          {
+            "title": "قريباً",
+            "content": "يتم دعم المزيد من المنصات..."
           }
         ]
       }

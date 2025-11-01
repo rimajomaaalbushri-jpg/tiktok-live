@@ -301,27 +301,32 @@ class HomePage(PageBase):
                 margin=ft.margin.only(bottom=5),
             )
 
-        announcement_list = self.app.about.about_config["version_updates"][0]["announcement"][self.app.language_code]
-        announcements = [
-            create_announcement_card(
-                announcement_list[0]["title"],
-                announcement_list[0]["content"],
-                ft.Icons.NEW_RELEASES_ROUNDED,
-                ft.Colors.GREEN,
-            ),
-            create_announcement_card(
-                announcement_list[1]["title"],
-                announcement_list[1]["content"],
-                ft.Icons.LIGHTBULB_OUTLINE_ROUNDED,
-                ft.Colors.AMBER,
-            ),
-            create_announcement_card(
-                announcement_list[2]["title"],
-                announcement_list[2]["content"],
-                ft.Icons.UPCOMING_ROUNDED,
-                ft.Colors.BLUE,
-            ),
-        ]
+        # Get announcement list, fall back to English if current language is not available
+        announcement_dict = self.app.about.about_config["version_updates"][0]["announcement"]
+        announcement_list = announcement_dict.get(self.app.language_code, announcement_dict.get("en", []))
+        
+        announcements = []
+        if len(announcement_list) >= 3:
+            announcements = [
+                create_announcement_card(
+                    announcement_list[0]["title"],
+                    announcement_list[0]["content"],
+                    ft.Icons.NEW_RELEASES_ROUNDED,
+                    ft.Colors.GREEN,
+                ),
+                create_announcement_card(
+                    announcement_list[1]["title"],
+                    announcement_list[1]["content"],
+                    ft.Icons.LIGHTBULB_OUTLINE_ROUNDED,
+                    ft.Colors.AMBER,
+                ),
+                create_announcement_card(
+                    announcement_list[2]["title"],
+                    announcement_list[2]["content"],
+                    ft.Icons.UPCOMING_ROUNDED,
+                    ft.Colors.BLUE,
+                ),
+            ]
 
         return ft.Container(
             content=ft.Column(
