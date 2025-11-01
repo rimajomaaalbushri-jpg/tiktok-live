@@ -8,6 +8,13 @@ import httpx
 
 from ...utils.logger import logger
 
+# Cookie attributes to ignore when parsing JSON objects
+EXCLUDED_COOKIE_ATTRIBUTES = {
+    'domain', 'path', 'expires', 'expirationDate', 
+    'httpOnly', 'secure', 'sameSite', 'hostOnly', 
+    'session', 'storeId', 'id'
+}
+
 
 class TikTokAuth:
     """Handle TikTok cookie authentication and validation."""
@@ -26,7 +33,6 @@ class TikTokAuth:
         - Netscape format (from browser export)
         - Simple key=value format
         - JSON format (object or array)
-        - Semicolon-separated format (cookie: value1; value2)
         
         Args:
             content: Cookie file content as string
@@ -60,7 +66,7 @@ class TikTokAuth:
                         else:
                             # If it's a dict without name/value, try to use it directly
                             for key, val in item.items():
-                                if key not in ['domain', 'path', 'expires', 'httpOnly', 'secure', 'sameSite']:
+                                if key not in EXCLUDED_COOKIE_ATTRIBUTES:
                                     cookies[key] = str(val)
             if cookies:
                 logger.info(f"Parsed {len(cookies)} cookies from JSON format")
