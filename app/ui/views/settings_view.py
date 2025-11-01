@@ -962,7 +962,7 @@ class SettingsPage(PageBase):
             max_lines=3,
         )
         
-        # Create upload button
+        # Create upload button (only show in desktop mode)
         upload_button = ft.ElevatedButton(
             text=self._["tiktok_cookie_upload"],
             icon=ft.icons.UPLOAD_FILE,
@@ -974,6 +974,7 @@ class SettingsPage(PageBase):
                 color=ft.colors.WHITE,
                 bgcolor=ft.colors.BLUE,
             ),
+            visible=not self.app.is_web_mode,  # Hide in web mode
         )
         
         # Create validate button
@@ -1024,6 +1025,15 @@ class SettingsPage(PageBase):
         if e.files and len(e.files) > 0:
             file_path = e.files[0].path
             
+            # Check if we're in web mode where file_path might be None
+            if file_path is None:
+                await self.app.snack_bar.show_snack_bar(
+                    "File upload not supported in web mode. Please paste cookie content directly into the text field.",
+                    bgcolor=ft.colors.ORANGE
+                )
+                logger.warning("FilePicker in web mode: file path is None")
+                return
+            
             # Maximum file size: 1MB
             MAX_FILE_SIZE = 1024 * 1024  # 1MB in bytes
             
@@ -1040,12 +1050,12 @@ class SettingsPage(PageBase):
                 
                 # Read the file content with error handling for different encodings
                 try:
-                    with open(file_path, 'r', encoding='utf-8') as f:
+                    with open(file_path, encoding='utf-8') as f:
                         content = f.read()
                 except UnicodeDecodeError:
                     # Try with latin-1 encoding as fallback
                     try:
-                        with open(file_path, 'r', encoding='latin-1') as f:
+                        with open(file_path, encoding='latin-1') as f:
                             content = f.read()
                     except Exception as enc_err:
                         await self.app.snack_bar.show_snack_bar(
