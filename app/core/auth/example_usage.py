@@ -5,8 +5,8 @@ This demonstrates how to use the TikTokAuth class programmatically.
 Run from the project root: python -m app.core.auth.example_usage
 """
 import asyncio
-import sys
 import os
+import sys
 
 # Add project root to path if running directly
 if __name__ == "__main__":
